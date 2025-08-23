@@ -17,6 +17,8 @@ const createMaterialSchema = z.object({
   isPublished: z.boolean().optional()
 });
 
+const updateMaterialSchema = createMaterialSchema.partial();
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -72,9 +74,25 @@ export async function createMaterial(req: Request, res: Response) {
   res.status(201).json(created);
 }
 
-export function updateMaterial(_req: Request, res: Response) {
-  return res.status(501).json({ error: "Not implemented yet" });
+export async function updateMaterialById(req: Request, res: Response) {
+  const { id } = req.params;
+  const parsed = updateMaterialSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid data" });
+
+  const data = parsed.data;
+  const $set: any = { ...data };
+  if (typeof data.slug === "string") $set.slug = slugify(data.slug);
+
+  try {
+    const updated = await MaterialModel.findByIdAndUpdate(id, { $set }, { new: true });
+    if (!updated) return res.status(404).json({ error: "Material not found" });
+    res.json(updated);
+  } catch (err: any) {
+    if (err?.code === 11000) return res.status(409).json({ error: "Slug already exists for this type" });
+    throw err;
+  }
 }
+
 export async function deleteMaterialById(req: Request, res: Response) {
   const { id } = req.params;
   const deleted = await MaterialModel.findByIdAndDelete(id);

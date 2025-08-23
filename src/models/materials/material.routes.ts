@@ -3,7 +3,7 @@ import {
   listMaterials,
   getMaterialByTypeSlug,
   createMaterial,
-  updateMaterial,
+  updateMaterialById,
   deleteMaterialById,
 } from "./material.controller";
 
@@ -12,7 +12,7 @@ const router = Router();
 router.get("/", listMaterials);
 router.get("/:type/:slug", getMaterialByTypeSlug);
 router.post("/", createMaterial);
-router.put("/:slug", updateMaterial);     
+router.put("/:id", updateMaterialById);     
 router.delete("/:id", deleteMaterialById);  
 
 export default router;
