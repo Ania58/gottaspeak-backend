@@ -4,7 +4,7 @@ import {
   getMaterialByTypeSlug,
   createMaterial,
   updateMaterial,
-  deleteMaterial,
+  deleteMaterialById,
 } from "./material.controller";
 
 const router = Router();
@@ -13,6 +13,6 @@ router.get("/", listMaterials);
 router.get("/:type/:slug", getMaterialByTypeSlug);
 router.post("/", createMaterial);
 router.put("/:slug", updateMaterial);     
-router.delete("/:slug", deleteMaterial);  
+router.delete("/:id", deleteMaterialById);  
 
 export default router;

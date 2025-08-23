@@ -75,6 +75,10 @@ export async function createMaterial(req: Request, res: Response) {
 export function updateMaterial(_req: Request, res: Response) {
   return res.status(501).json({ error: "Not implemented yet" });
 }
-export function deleteMaterial(_req: Request, res: Response) {
-  return res.status(501).json({ error: "Not implemented yet" });
+export async function deleteMaterialById(req: Request, res: Response) {
+  const { id } = req.params;
+  const deleted = await MaterialModel.findByIdAndDelete(id);
+  if (!deleted) return res.status(404).json({ error: "Material not found" });
+  res.json({ ok: true });
 }
+
