@@ -5,6 +5,8 @@ import {
   createMaterial,
   updateMaterialById,
   deleteMaterialById,
+  publishMaterial,     
+  unpublishMaterial,
 } from "./material.controller";
 import { adminGuard } from "../../middleware/adminGuard";
 
@@ -15,5 +17,8 @@ router.get("/:type/:slug", getMaterialByTypeSlug);
 router.post("/", adminGuard, createMaterial);
 router.put("/:id", adminGuard, updateMaterialById);     
 router.delete("/:id", adminGuard, deleteMaterialById);  
+
+router.put("/:id/publish", adminGuard, publishMaterial);
+router.put("/:id/unpublish", adminGuard, unpublishMaterial);
 
 export default router;

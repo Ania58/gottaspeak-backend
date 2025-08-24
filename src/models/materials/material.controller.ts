@@ -159,3 +159,25 @@ export async function deleteMaterialById(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
+export async function publishMaterial(req: Request, res: Response) {
+  const { id } = req.params;
+  const doc = await MaterialModel.findByIdAndUpdate(
+    id,
+    { $set: { isPublished: true } },
+    { new: true }
+  );
+  if (!doc) return res.status(404).json({ error: "Material not found" });
+  res.json(doc);
+}
+
+export async function unpublishMaterial(req: Request, res: Response) {
+  const { id } = req.params;
+  const doc = await MaterialModel.findByIdAndUpdate(
+    id,
+    { $set: { isPublished: false } },
+    { new: true }
+  );
+  if (!doc) return res.status(404).json({ error: "Material not found" });
+  res.json(doc);
+}
+
