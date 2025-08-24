@@ -43,3 +43,30 @@ export async function createMessage(req: Request, res: Response) {
 
   res.status(201).json(created);
 }
+
+export async function listThreads(req: Request, res: Response) {
+  const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? 50), 10) || 50, 1), 200);
+  const search = (req.query.search as string) || "";
+
+  const pipeline: any[] = [];
+  if (search) pipeline.push({ $match: { userId: { $regex: search, $options: "i" } } });
+
+  pipeline.push(
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: "$userId",
+        lastText: { $first: "$text" },
+        lastAt: { $first: "$createdAt" },
+        lastDirection: { $first: "$direction" },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { lastAt: -1 } },
+    { $limit: limit },
+    { $project: { _id: 0, userId: "$_id", lastText: 1, lastAt: 1, lastDirection: 1, count: 1 } }
+  );
+
+  const threads = await MessageModel.aggregate(pipeline);
+  res.json(threads);
+}
