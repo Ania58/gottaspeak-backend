@@ -2,6 +2,10 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { MaterialModel } from "./material.model";
 
+function isAdmin(req: Request) {
+  return req.header("x-admin-token") === process.env.ADMIN_TOKEN;
+}
+
 const createMaterialSchema = z.object({
   title: z.string().min(1),
   type: z.enum(["grammar", "vocabulary", "other"]),
@@ -57,6 +61,10 @@ export async function listMaterials(req: Request, res: Response) {
   if (type) filter.type = type;
   if (search) filter.title = { $regex: search, $options: "i" };
 
+  if (!isAdmin(req)) {
+    filter.isPublished = true;
+  }
+
   const [items, total] = await Promise.all([
     MaterialModel.find(filter).sort(sort).skip(skip).limit(limit),
     MaterialModel.countDocuments(filter),
@@ -77,7 +85,13 @@ export async function listMaterials(req: Request, res: Response) {
 
 export async function getMaterialByTypeSlug(req: Request, res: Response) {
   const { type, slug } = req.params;
-  const doc = await MaterialModel.findOne({ type, slug });
+  const filter: any = { type, slug };
+
+    if (!isAdmin(req)) {
+    filter.isPublished = true;
+  }
+
+  const doc = await MaterialModel.findOne(filter);
   if (!doc) return res.status(404).json({ error: "Material not found" });
   res.json(doc);
 }
