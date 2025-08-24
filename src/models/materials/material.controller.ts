@@ -181,3 +181,17 @@ export async function unpublishMaterial(req: Request, res: Response) {
   res.json(doc);
 }
 
+export async function listMaterialTags(req: Request, res: Response) {
+  const filter: any = {};
+  
+  if (!isAdmin(req)) filter.isPublished = true;
+
+  if (typeof req.query.type === "string" && req.query.type) {
+    filter.type = req.query.type;
+  }
+
+  const tags: string[] = await MaterialModel.distinct("tags", filter);
+  tags.sort((a, b) => a.localeCompare(b));
+
+  res.json({ tags });
+}
