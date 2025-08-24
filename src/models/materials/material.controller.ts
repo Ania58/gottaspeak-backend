@@ -61,6 +61,25 @@ export async function listMaterials(req: Request, res: Response) {
   if (type) filter.type = type;
   if (search) filter.title = { $regex: search, $options: "i" };
 
+  const tagsParam = req.query.tags;
+  let tags: string[] = [];
+  if (typeof tagsParam === "string") {
+    tags = tagsParam
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  } else if (Array.isArray(tagsParam)) {
+    tags = tagsParam
+      .flatMap((t) => String(t).split(","))
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+
+  const tagsMode = String(req.query.tagsMode || "any").toLowerCase() === "all" ? "all" : "any";
+  if (tags.length) {
+    filter.tags = tagsMode === "all" ? { $all: tags } : { $in: tags };
+  }
+
   if (!isAdmin(req)) {
     filter.isPublished = true;
   }
