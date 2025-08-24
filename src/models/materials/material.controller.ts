@@ -41,12 +41,38 @@ async function ensureUniqueSlug(type: string, baseSlug: string) {
 
 export async function listMaterials(req: Request, res: Response) {
   const { type, search } = req.query as { type?: string; search?: string };
+
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+  const skip = (page - 1) * limit;
+
+  const allowedSort = new Set(["createdAt", "updatedAt", "order", "title"]);
+  const sortBy = (req.query.sortBy as string) && allowedSort.has(String(req.query.sortBy))
+    ? String(req.query.sortBy)
+    : "createdAt";
+  const sortDir = String(req.query.sortDir || "desc").toLowerCase() === "asc" ? 1 : -1;
+  const sort: Record<string, 1 | -1> = { [sortBy]: sortDir as 1 | -1 };
+
   const filter: any = {};
   if (type) filter.type = type;
   if (search) filter.title = { $regex: search, $options: "i" };
 
-  const items = await MaterialModel.find(filter).sort({ createdAt: -1 }).limit(100);
-  res.json(items);
+  const [items, total] = await Promise.all([
+    MaterialModel.find(filter).sort(sort).skip(skip).limit(limit),
+    MaterialModel.countDocuments(filter),
+  ]);
+
+  res.json(
+    {
+      items,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      sortBy,
+      sortDir: sortDir === 1 ? "asc" : "desc",
+    }
+  );
 }
 
 export async function getMaterialByTypeSlug(req: Request, res: Response) {
