@@ -9,6 +9,6 @@ const MessageSchema = new Schema(
   { timestamps: true }
 );
 
-MessageSchema.index({ userId: 1, createdAt: 1 });
+MessageSchema.index({ userId: 1, createdAt: -1 });
 
 export const MessageModel = model("Message", MessageSchema);

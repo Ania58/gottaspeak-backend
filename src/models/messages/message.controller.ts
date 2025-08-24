@@ -13,7 +13,7 @@ export async function listMessages(req: Request, res: Response) {
 
   const { userId, limit = 50 } = q.data;
   const items = await MessageModel.find({ userId }).sort({ createdAt: 1 }).limit(limit);
-  res.json(items);
+  return res.json(items);
 }
 
 const postBody = z.object({
@@ -41,26 +41,35 @@ export async function createMessage(req: Request, res: Response) {
     direction,
   });
 
-  res.status(201).json(created);
+  return res.status(201).json(created);
 }
 
+const threadsQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+  search: z.string().optional().default(""),
+});
+
 export async function listThreads(req: Request, res: Response) {
-  const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? 50), 10) || 50, 1), 200);
-  const search = (req.query.search as string) || "";
+  const q = threadsQuery.safeParse(req.query);
+  if (!q.success) return res.status(400).json({ error: q.error.issues[0]?.message });
+
+  const { limit, search } = q.data;
 
   const pipeline: any[] = [];
-  if (search) pipeline.push({ $match: { userId: { $regex: search, $options: "i" } } });
+  if (search) {
+    pipeline.push({ $match: { userId: { $regex: search, $options: "i" } } });
+  }
 
   pipeline.push(
-    { $sort: { createdAt: -1 } },
+    { $sort: { userId: 1, createdAt: -1 } }, 
     {
       $group: {
         _id: "$userId",
         lastText: { $first: "$text" },
         lastAt: { $first: "$createdAt" },
         lastDirection: { $first: "$direction" },
-        count: { $sum: 1 }
-      }
+        count: { $sum: 1 },
+      },
     },
     { $sort: { lastAt: -1 } },
     { $limit: limit },
@@ -68,5 +77,5 @@ export async function listThreads(req: Request, res: Response) {
   );
 
   const threads = await MessageModel.aggregate(pipeline);
-  res.json(threads);
+  return res.json(threads);
 }
