@@ -32,18 +32,21 @@ export async function createLessonLink(req: Request, res: Response) {
   const room = randomRoom();
   const url = `${baseTrimmed}/${room}#userInfo.displayName=${encodeURIComponent(displayName)}`;
 
+  const ttl = (ttlMinutes ?? 24 * 60); 
+  const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
+
   const doc = await LessonLinkModel.create({
     room,
     url,
     participants: [teacherId, studentId].filter(Boolean) as string[],
     createdBy: teacherId || "",
-    ...(ttlMinutes ? { expiresAt: new Date(Date.now() + ttlMinutes * 60 * 1000) } : {}),
+    expiresAt,
   });
 
   return res.status(201).json({
     room: doc.room,
     url: doc.url,
-    expiresAt: doc.expiresAt || null,
+    expiresAt: doc.expiresAt,
   });
 }
 

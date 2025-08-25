@@ -13,5 +13,6 @@ const LessonLinkSchema = new Schema(
 
 LessonLinkSchema.index({ createdAt: -1 });
 LessonLinkSchema.index({ room: 1 }, { unique: true });
+LessonLinkSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const LessonLinkModel = model("LessonLink", LessonLinkSchema);
