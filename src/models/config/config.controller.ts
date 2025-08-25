@@ -13,7 +13,7 @@ export async function getPublicConfig(_req: Request, res: Response) {
   const cfg = await ConfigModel.findById("site");
   res.json({
     sayrightUrl: cfg?.sayrightUrl ?? "https://sayright.gottaspeak.com",
-    lessonJoinUrl: cfg?.lessonJoinUrl ?? "",
+    lessonJoinUrl: cfg?.lessonJoinUrl ?? "https://meet.jit.si",
     languages: cfg?.languages ?? ["pl", "en", "es"],
   });
 }
