@@ -1,24 +1,36 @@
 import nodemailer from "nodemailer";
 
+const host = process.env.BREVO_SMTP_HOST!;
+const port = Number(process.env.BREVO_SMTP_PORT || 587);
+const user = process.env.BREVO_SMTP_USER!;
+const pass = process.env.BREVO_SMTP_PASS!;
+
+const DEFAULT_FROM =
+  process.env.MAIL_FROM_EMAIL
+    ? `${process.env.MAIL_FROM_NAME || "GottaSpeak"} <${process.env.MAIL_FROM_EMAIL}>`
+    : "GottaSpeak <hello@gottaspeak.com>";
+
 export const mailer = nodemailer.createTransport({
-  host: process.env.SMTP_HOST!,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false,
-  auth: { user: process.env.SMTP_USER!, pass: process.env.SMTP_PASS! },
+  host,
+  port,
+  secure: port === 465,
+  auth: { user, pass },
 });
 
 export function sendMail(opts: {
   to: string | string[];
   subject: string;
-  html: string;
+  html?: string;
+  text?: string;
   from?: string;
   replyTo?: string;
 }) {
   return mailer.sendMail({
-    from: opts.from || `GottaSpeak Support <support@gottaspeak.com>`,
+    from: opts.from || DEFAULT_FROM,
     to: opts.to,
     subject: opts.subject,
-    html: opts.html,
-    replyTo: opts.replyTo,
+    ...(opts.html ? { html: opts.html } : {}),
+    ...(opts.text ? { text: opts.text } : {}),
+    ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
   });
 }

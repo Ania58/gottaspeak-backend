@@ -10,5 +10,6 @@ const MessageSchema = new Schema(
 );
 
 MessageSchema.index({ userId: 1, createdAt: -1 });
+MessageSchema.index({ userId: 1, createdAt:  1 });
 
 export const MessageModel = model("Message", MessageSchema);

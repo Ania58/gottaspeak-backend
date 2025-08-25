@@ -9,15 +9,18 @@ const contactSchema = z.object({
   subject: z.string().optional(),
   message: z.string().min(3),
   userId: z.string().optional(),
+  channel: z.enum(["hello", "support"]).optional().default("support"),
 });
 
 export async function contactSupport(req: Request, res: Response) {
   const parsed = contactSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message });
 
-  const { email, name, subject, message, userId } = parsed.data;
+  const { email, name, subject, message, userId, channel } = parsed.data;
 
-  const supportTo = process.env.SUPPORT_EMAIL || "support@gottaspeak.com";
+  const helloTo   = process.env.MAIL_FROM_EMAIL  || "hello@gottaspeak.com";
+  const supportTo = process.env.MAIL_TO_SUPPORT  || "support@gottaspeak.com";
+  const toAddr    = channel === "hello" ? helloTo : supportTo;
   const subj = subject || "New message";
 
   const log = await SupportMailModel.create({
@@ -32,7 +35,7 @@ export async function contactSupport(req: Request, res: Response) {
 
   try {
     await sendMail({
-      to: supportTo,
+      to: toAddr,
       subject: `GottaSpeak: ${subj}`,
       html: `
         <p><b>From:</b> ${name || "-"} &lt;${email}&gt;</p>
@@ -46,22 +49,30 @@ export async function contactSupport(req: Request, res: Response) {
     await SupportMailModel.findByIdAndUpdate(log._id, { status: "failed", error: String(e?.message || e) });
   }
 
-  try {
+  const autoSubject = channel === "hello"
+    ? "Thanks for your message"
+    : "We received your support request";
+
+  const autoHtml = channel === "hello"
+    ? `<p>Thanks for reaching out! We’ll get back to you soon.</p>`
+    : `<p>Thanks for your message. We've logged your support request and will reply shortly.</p>`;
+
+   try {
     await SupportMailModel.create({
       direction: "outgoing",
       to: [email],
-      from: supportTo,
-      subject: "Thanks for your message",
-      text: "Thanks for reaching out! We’ll get back to you soon.",
+      from: toAddr,
+      subject: autoSubject,
+      text: autoHtml.replace(/<[^>]+>/g, ""),
       userId,
       status: "queued",
     });
 
     await sendMail({
       to: email,
-      subject: "Thanks for your message",
-      html: `<p>Thanks for reaching out! We’ll get back to you soon.</p>`,
-      replyTo: supportTo,
+      subject: autoSubject,
+      html: autoHtml,
+      replyTo: toAddr,
     });
 
     await SupportMailModel.updateOne(
