@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { sendMail } from "../../lib/mailer";
+import { sendMail } from "../../services/mailer";
 
 const bodySchema = z.object({
   name: z.string().min(1).max(80),
