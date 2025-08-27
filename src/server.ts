@@ -1,5 +1,6 @@
 import "dotenv/config";  
 import express from "express";
+import cors from "cors";
 import { connectDB } from "./config/db";
 import materialsRouter from "./models/materials/material.routes";
 import configRouter from "./models/config/config.routes";
@@ -12,6 +13,12 @@ import lessonLinkRoutes from "./lessons/lesson-link.routes";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
+const origins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
+  .split(",")
+  .map(s => s.trim());
+
+app.use(cors({ origin: origins }));
+
 app.use(express.json());
 
 app.use("/materials", materialsRouter);
