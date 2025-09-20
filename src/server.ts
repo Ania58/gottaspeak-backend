@@ -10,6 +10,7 @@ import messagesRouter from "./models/messages/message.routes";
 import contactRouter from "./models/contact/contact.routes";
 import supportMailRouter from "./models/messages/support-mail.routes";
 import lessonLinkRoutes from "./lessons/lesson-link.routes";
+import coursesRouter from "./models/courses/course.routes"; 
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -29,6 +30,7 @@ app.use("/messages", messagesRouter);
 app.use("/contact", contactRouter);
 app.use("/support-mail", supportMailRouter);
 app.use("/lessons", lessonLinkRoutes);
+app.use("/courses", coursesRouter);
 
 app.get("/", (_req, res) => {
   res.send("GottaSpeak backend works 🚀");
