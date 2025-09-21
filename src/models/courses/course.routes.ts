@@ -73,5 +73,24 @@ router.get("/:level/units/:unit/lessons/:lesson", async (req, res) => {
   }
 });
 
+router.get("/:level/units/:unit/revision", async (req, res) => {
+  try {
+    const { level, unit } = req.params;
+    const unitId = String(unit).padStart(2, "0");
+    const url = `${process.env.COURSES_CDN_BASE!.replace(/\/+$/, "")}/${level}/unit-${unitId}/revision-${unitId}.md`;
+
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    const md = await r.text();
+
+    const matter = (await import("gray-matter")).default;
+    const { data, content } = matter(md);
+    const steps = content.split(/\n-{3,}\n/g);
+    res.json({ meta: data, steps });
+  } catch (e: any) {
+    res.status(404).json({ error: "Revision not found", details: e?.message });
+  }
+});
+
 export default router;
 
