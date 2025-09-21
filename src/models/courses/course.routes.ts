@@ -33,14 +33,44 @@ router.get("/:level", async (req, res) => {
     const { level } = req.params;
     const url = `${CDN_BASE}/${level}/units.json`;
     const raw = await fetchText(url);
-    const list = JSON.parse(raw);
-    if (!Array.isArray(list)) throw new Error("Invalid units.json");
+
+    let data: any;
+    try { data = JSON.parse(raw); } catch {
+      throw new Error("Malformed units.json");
+    }
+
+    let list: string[] | null = null;
+    if (Array.isArray(data)) list = data;                
+    else if (Array.isArray(data?.units)) list = data.units; 
+
+    if (!list) throw new Error("Invalid units.json");
     res.json(list);
   } catch (e: any) {
     res.status(404).json({ error: "Course listing not available", details: e?.message });
   }
 });
 
+router.get("/:level/units", async (req, res) => {
+  try {
+    const { level } = req.params;
+    const url = `${CDN_BASE}/${level}/units.json`;
+    const raw = await fetchText(url);
+
+    let data: any;
+    try { data = JSON.parse(raw); } catch {
+      throw new Error("Malformed units.json");
+    }
+
+    let list: string[] | null = null;
+    if (Array.isArray(data)) list = data;
+    else if (Array.isArray(data?.units)) list = data.units;
+
+    if (!list) throw new Error("Invalid units.json");
+    res.json(list);
+  } catch (e: any) {
+    res.status(404).json({ error: "Course listing not available", details: e?.message });
+  }
+});
 
 router.get("/:level/units/:unit", async (req, res) => {
   try {
