@@ -7,11 +7,22 @@ const createSchema = z.object({
   teacherId: z.string().optional(),
   studentId: z.string().optional(),
   displayName: z.string().optional().default("Guest"),
-  ttlMinutes: z.coerce.number().int().min(5).max(7 * 24 * 60).optional(), 
+  ttlMinutes: z.coerce.number().int().min(5).max(7 * 24 * 60).optional(),
 });
 
 function randomRoom(): string {
   return `gs-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
+}
+
+function normalizeJitsiBase(raw: string | undefined): string {
+  const fallback = "https://meet.jit.si";
+  try {
+    const u = new URL((raw || fallback).trim());
+    const origin = `${u.protocol}//${u.hostname}${u.port ? `:${u.port}` : ""}`;
+    return origin.replace(/\/+$/, "");
+  } catch {
+    return fallback;
+  }
 }
 
 export async function createLessonLink(req: Request, res: Response) {
@@ -26,13 +37,13 @@ export async function createLessonLink(req: Request, res: Response) {
   }
   const { teacherId, studentId, displayName, ttlMinutes } = parsed.data;
 
-  const base = (await ConfigModel.findById("site"))?.lessonJoinUrl || "https://meet.jit.si";
-  const baseTrimmed = base.replace(/\/+$/, "");
+  const siteCfg = await ConfigModel.findById("site");
+  const base = normalizeJitsiBase(siteCfg?.lessonJoinUrl);
 
   const room = randomRoom();
-  const url = `${baseTrimmed}/${room}#userInfo.displayName=${encodeURIComponent(displayName)}`;
+  const url = `${base}/${room}#userInfo.displayName=${encodeURIComponent(displayName)}`;
 
-  const ttl = (ttlMinutes ?? 24 * 60); 
+  const ttl = ttlMinutes ?? 24 * 60;
   const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
 
   const doc = await LessonLinkModel.create({
@@ -54,5 +65,14 @@ export async function getLessonLink(req: Request, res: Response) {
   const room = String(req.params.room || "");
   const doc = await LessonLinkModel.findOne({ room });
   if (!doc) return res.status(404).json({ error: "Not found" });
-  return res.json({ room: doc.room, url: doc.url, expiresAt: doc.expiresAt || null });
+
+  if (doc.expiresAt && doc.expiresAt.getTime() <= Date.now()) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  return res.json({
+    room: doc.room,
+    url: doc.url,
+    expiresAt: doc.expiresAt || null,
+  });
 }
